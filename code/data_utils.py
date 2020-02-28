@@ -11,6 +11,195 @@ import pickle
 from skimage import measure
 from skimage import filters
 from tqdm import tqdm
+import theano
+
+
+def sample_image1(img, img_label, counter, i, j, start_index, end_index, path, img_name, img_size,stride, Boundary ):
+    #start_index = 0
+    #end_index = img.shape[1]
+    if stride == 0:
+        stride = 256
+    if Boundary == 'i_boundary':
+        i_min = img.shape[0]-img_size
+        i_max = img.shape[0]
+        
+        j_min = start_index + j*stride
+        j_max = start_index + j*stride + img_size
+        
+        img_cropped = img[i_min:i_max, j_min:j_max,:]
+        img_label_cropped = img_label[i_min:i_max, j_min:j_max,:]
+
+        labels, num_labels =  measure.label(img_label_cropped, background = 0, return_num= True, connectivity=1)
+        cc = measure.regionprops(labels, img_label_cropped)
+
+        for k in range(num_labels):
+            if cc[k].area < 3: 
+                img_label_cropped[img_label_cropped == k] = 0
+        #img_path = path + '/Images' + '/'+ img_name + '_' + str(counter)  + '_' + str(i) + '_' + str(j) + '.png'
+        #img_label_path = path + '/Labels' + '/'+ img_name + '_' + str(counter)  + '_' +  str(i) + '_' + str(j) + '_mask' + '.png'
+        
+        img_path = path + '/Images' + '/'+ img_name + '_'  +  str(i) + '_' + str(j) + '.png'
+        img_label_path = path + '/Labels' + '/'+ img_name +  '_' +  str(i) + '_' + str(j) + '_mask' + '.png'
+        counter += 1
+
+        cv2.imwrite(img_path,img_cropped)
+        cv2.imwrite(img_label_path,img_label_cropped)
+    
+    
+    
+    elif Boundary == 'j_boundary':
+        i_min = i*stride
+        i_max = i*stride + img_size
+        
+        j_min = end_index -img_size
+        j_max = end_index
+
+        img_cropped = img[i_min:i_max, j_min:j_max,:]
+        img_label_cropped = img_label[i_min:i_max, j_min:j_max,:]
+
+        #img_path = path + '/Images' + '/'+ img_name + '_' + str(counter)  + '_' +  str(i) + '_' + str(j) + '.png'
+        #img_label_path = path + '/Labels' + '/'+ img_name + '_' +  str(counter)  + '_' +  str(i) + '_' + str(j) + '_mask' + '.png'
+        img_path = path + '/Images' + '/'+ img_name + '_'  +  str(i) + '_' + str(j) + '.png'
+        img_label_path = path + '/Labels' + '/'+ img_name +  '_' +  str(i) + '_' + str(j) + '_mask' + '.png'
+    
+
+        labels, num_labels =  measure.label(img_label_cropped, background = 0, return_num= True, connectivity=1)
+        cc = measure.regionprops(labels, img_label_cropped)
+
+        for k in range(num_labels):
+            if cc[k].area < 3: 
+                img_label_cropped[img_label_cropped == k] = 0
+        counter += 1
+        cv2.imwrite(img_path,img_cropped)
+        cv2.imwrite(img_label_path,img_label_cropped)
+     
+    elif Boundary == 'ij_boundary':
+        i_min = img.shape[0]-img_size
+        i_max = img.shape[0]
+        
+        j_min = end_index - img_size
+        j_max = end_index 
+
+        img_cropped = img[i_min:i_max, j_min:j_max,:]
+        img_label_cropped = img_label[i_min:i_max, j_min:j_max,:]
+
+        #img_path = path + '/Images' + '/'+ img_name + '_' + str(counter)  + '_' + str(i) + '_' + str(j) + '.png'
+        #img_label_path = path + '/Labels' + '/'+ img_name + '_' + str(counter)  + '_' +  str(i) + '_' + str(j) + '_mask' + '.png'
+
+        img_path = path + '/Images' + '/'+ img_name + '_'  +  str(i) + '_' + str(j) + '.png'
+        img_label_path = path + '/Labels' + '/'+ img_name +  '_' +  str(i) + '_' + str(j) + '_mask' + '.png'
+
+        labels, num_labels =  measure.label(img_label_cropped, background = 0, return_num= True, connectivity=1)
+        cc = measure.regionprops(labels, img_label_cropped)
+
+        for k in range(num_labels):
+            if cc[k].area < 3: 
+                img_label_cropped[img_label_cropped == k] = 0
+        
+        counter += 1
+        cv2.imwrite(img_path,img_cropped)
+        cv2.imwrite(img_label_path,img_label_cropped)
+     
+    
+    else:
+        i_min = i*stride
+        i_max = i*stride + img_size
+        j_min = start_index + j*stride
+        j_max = start_index + j*stride + img_size
+        img_cropped = img[i_min:i_max, j_min:j_max,:]
+        img_label_cropped = img_label[i_min:i_max, j_min:j_max,:]
+
+        #img_path = path + '/Images' + '/'+ img_name + '_' + str(counter)  + '_' +  str(i) + '_' + str(j) + '.png'
+        #img_label_path = path + '/Labels' + '/'+ img_name + '_' + str(counter)  + '_' +  str(i) + '_' + str(j) + '_mask' + '.png'
+    
+        img_path = path + '/Images' + '/'+ img_name + '_'  +  str(i) + '_' + str(j) + '.png'
+        img_label_path = path + '/Labels' + '/'+ img_name +  '_' +  str(i) + '_' + str(j) + '_mask' + '.png'
+        
+        labels, num_labels =  measure.label(img_label_cropped, background = 0, return_num= True, connectivity=1)
+        cc = measure.regionprops(labels, img_label_cropped)
+
+        for k in range(num_labels):
+            if cc[k].area < 3: 
+                img_label_cropped[img_label_cropped == k] = 0
+        
+        counter += 1
+        cv2.imwrite(img_path,img_cropped)
+        cv2.imwrite(img_label_path,img_label_cropped)
+    
+    return img_cropped, img_label_cropped , counter
+
+def sample_image_new(image, label, counter, start_index, end_index, setname, TARGET_DIR, img_name):
+
+    img_size = 256
+    stride = 128
+    
+    width = end_index - start_index
+    for i in range(int( np.ceil(image.shape[0]/(img_size-stride))) -2 ):
+        for j in range(int( np.ceil(width/(img_size-stride))) -1 ):
+
+            cond_a = int( np.ceil(image.shape[0]/(img_size-stride))) -3 
+            cond_b = int( np.ceil(width/(img_size-stride))) - 2 
+            if ( i  == cond_a )  and  not( j == cond_b):
+                img_crop, label_crop, counter = sample_image1(image, label,counter, i, j, start_index, end_index, TARGET_DIR + setname, img_name, img_size, stride, Boundary = 'i_boundary')
+            elif not (i == cond_a)  and ( j == cond_b ):
+                img_crop, label_crop, counter = sample_image1(image, label,counter, i, j, start_index, end_index, TARGET_DIR + setname, img_name, img_size, stride, Boundary = 'j_boundary')
+            elif (i == cond_a )  and ( j == cond_b) :
+                img_crop, label_crop, counter = sample_image1(image, label,counter, i, j, start_index, end_index, TARGET_DIR + setname, img_name, img_size, stride, Boundary = 'ij_boundary')
+            else:
+                img_crop, label_crop, counter = sample_image1(image, label,counter, i, j, start_index, end_index, TARGET_DIR + setname, img_name, img_size, stride, Boundary = 'Normal' )
+    return counter
+
+def sampler_new(ROOT_DIR, TARGET_DIR):
+
+    if not os.path.exists(TARGET_DIR):
+        os.mkdir(TARGET_DIR)
+    
+    setname = ['Train', 'Val', 'Test']
+    if not os.path.exists(TARGET_DIR + setname[0]):
+        os.mkdir(TARGET_DIR + setname[0])
+        os.mkdir(TARGET_DIR + setname[0] + '/Images/')
+        os.mkdir(TARGET_DIR + setname[0] + '/Labels/')
+
+        os.mkdir(TARGET_DIR + setname[1])
+        os.mkdir(TARGET_DIR + setname[1] + '/Images/')
+        os.mkdir(TARGET_DIR + setname[1] + '/Labels/')
+
+        os.mkdir(TARGET_DIR + setname[2])
+        os.mkdir(TARGET_DIR + setname[2] + '/Images/')
+        os.mkdir(TARGET_DIR + setname[2] + '/Labels/')
+    
+    #Distribution_type = ['A', 'B', 'C']
+    Index_distribution = [{"Train": [0, 640], "Val":[640, 1024], "Test":[1024, 1380]},
+                        {"Train": [0, 640], "Test":[640, 1024], "Val":[1024, 1380]},
+                        
+                        {"Train": [384, 1024], "Val":[0, 384], "Test":[1024, 1380]},
+                        {"Train": [384, 1024], "Test":[0, 384], "Val":[1024, 1380]},
+                        
+                        {"Train": [740, 1380], "Val":[0, 356], "Test":[356, 740]},
+                        {"Train": [740, 1380], "Test":[0, 356], "Val":[356, 740]}]   
+                        
+    total_count = 0
+    for i in tqdm(range(len(os.listdir(os.path.join(ROOT_DIR, 'Images'))))):
+        Distribution_type = ['A', 'B', 'C', 'D']
+        image_path =  os.listdir(os.path.join(ROOT_DIR, 'Images'))[i]
+        img_name = image_path.split(".")[0]
+        image = cv2.imread(os.path.join(ROOT_DIR, 'Images',image_path))
+        label = cv2.imread(os.path.join(ROOT_DIR, 'Labels', img_name + '_mask.png'))
+
+        np.random.shuffle(Index_distribution)
+
+        counter = 0
+        # Train
+        counter = sample_image_new(image, label, counter, Index_distribution[0]["Train"][0], Index_distribution[0]["Train"][1], "Train", TARGET_DIR, img_name)
+
+        # Val
+        counter = sample_image_new(image, label, counter, Index_distribution[0]["Val"][0], Index_distribution[0]["Val"][1], "Val", TARGET_DIR, img_name)
+        
+        # Test
+        counter = sample_image_new(image, label, counter, Index_distribution[0]["Test"][0], Index_distribution[0]["Test"][1], "Test", TARGET_DIR, img_name)
+
+        total_count += counter    
+    print("total_images sampled :", total_count)
 
 def preprocess_data(ROOT_DIR, TARGET_DIR):
     """
@@ -25,10 +214,15 @@ def preprocess_data(ROOT_DIR, TARGET_DIR):
     print('Preparing Dataset............')
     #Step 1: Prepare Train, Val and Test 
     print('\n Step 1 : Preparing Train, Val and Test datasets')
-    TARGET_DIR_1 = os.path.join(TARGET_DIR, 'Sampled_Data')
+    TARGET_DIR_1 = os.path.join(TARGET_DIR, 'Train_val_test/')
+
+    #TARGET_DIR_1 = os.path.join(TARGET_DIR, 'Sampled_Data/')
+    sampler_new(ROOT_DIR, TARGET_DIR_1)
+    """
     Distribution = [0.6, 0.2, 0.2]  #[train, val, test]
     train_val_test(ROOT_DIR, TARGET_DIR_1, Distribution)
 
+    
     #Step 2: Sample Raw Data Images and labels 
     print('\n Step 2: Sampling Raw Data Images and Labels......')
     ROOT_DIR_2= TARGET_DIR_1
@@ -36,11 +230,11 @@ def preprocess_data(ROOT_DIR, TARGET_DIR):
     sampler(ROOT_DIR_2, TARGET_DIR_2, 'Train', img_size= 256, stride = 128)
     sampler(ROOT_DIR_2, TARGET_DIR_2, 'Val', img_size= 256, stride = 128)
     sampler(ROOT_DIR_2, TARGET_DIR_2, 'Test', img_size= 256, stride = 128)
-
+    """
     #Step 3: Data Augmentation
     print('\n Step 3: Data Augmentation...........')
-    ROOT_DIR_3 = os.path.join(TARGET_DIR_2, 'Train')
-    TARGET_DIR_3 = os.path.join(TARGET_DIR_2, 'Train_Aug')
+    ROOT_DIR_3 = os.path.join(TARGET_DIR_1, 'Train')
+    TARGET_DIR_3 = os.path.join(TARGET_DIR_1, 'Train_Aug')
     data_augmentation(ROOT_DIR_3, TARGET_DIR_3)
 
     print('\n Data preparation Finished!')
@@ -63,25 +257,25 @@ def train_val_test(ROOT_DIR, TARGET_DIR, Distribution):
     Test = Distribution[2]
 
     Dst_dir = TARGET_DIR
-    Train_set = Dst_dir + 'Train/'
-    Val_set = Dst_dir + 'Val/'
-    Test_set = Dst_dir + 'Test/'
+    Train_set = Dst_dir + '/Train/'
+    Val_set = Dst_dir + '/Val/'
+    Test_set = Dst_dir + '/Test/'
 
     # Create folders for train, val and test set
     if not os.path.exists(Dst_dir):
         os.mkdir(Dst_dir)
         
         os.mkdir(Train_set)
-        os.mkdir(Train_set + 'Images/')
-        os.mkdir(Train_set + 'Labels/')
+        os.mkdir(Train_set + '/Images/')
+        os.mkdir(Train_set + '/Labels/')
 
         os.mkdir(Val_set)
-        os.mkdir(Val_set + 'Images/')
-        os.mkdir(Val_set + 'Labels/')
+        os.mkdir(Val_set + '/Images/')
+        os.mkdir(Val_set + '/Labels/')
         
         os.mkdir(Test_set)
-        os.mkdir(Test_set + 'Images/')
-        os.mkdir(Test_set + 'Labels/')
+        os.mkdir(Test_set + '/Images/')
+        os.mkdir(Test_set + '/Labels/')
 
     list_dir_image = np.array(os.listdir(Image_dir))
     list_dir_label = np.array(os.listdir(Label_dir))
@@ -109,8 +303,8 @@ def train_val_test(ROOT_DIR, TARGET_DIR, Distribution):
         label = cv2.imread(label_path)
 
         try:
-            cv2.imwrite( Train_set + 'Images/' + os.path.basename(image_path), img)
-            cv2.imwrite( Train_set + 'Labels/' + os.path.basename(label_path), label)
+            cv2.imwrite( Train_set + '/Images/' + os.path.basename(image_path), img)
+            cv2.imwrite( Train_set + '/Labels/' + os.path.basename(label_path), label)
         except:
             import pdb; pdb.set_trace()
 
@@ -122,8 +316,8 @@ def train_val_test(ROOT_DIR, TARGET_DIR, Distribution):
         label = cv2.imread(label_path)
 
         try:
-            cv2.imwrite( Val_set + 'Images/' + os.path.basename(image_path), img)
-            cv2.imwrite( Val_set + 'Labels/' + os.path.basename(label_path), label)
+            cv2.imwrite( Val_set + '/Images/' + os.path.basename(image_path), img)
+            cv2.imwrite( Val_set + '/Labels/' + os.path.basename(label_path), label)
         except:
             import pdb; pdb.set_trace()
         
@@ -136,8 +330,8 @@ def train_val_test(ROOT_DIR, TARGET_DIR, Distribution):
         label = cv2.imread(label_path)
 
         try:
-            cv2.imwrite( Test_set + 'Images/' + os.path.basename(image_path), img)
-            cv2.imwrite( Test_set + 'Labels/' + os.path.basename(label_path), label)
+            cv2.imwrite( Test_set + '/Images/' + os.path.basename(image_path), img)
+            cv2.imwrite( Test_set + '/Labels/' + os.path.basename(label_path), label)
         except:
             import pdb; pdb.set_trace()
     
@@ -159,32 +353,36 @@ def sampler(ROOT_DIR, TARGET_DIR, setname, img_size = 256, stride = 128):
     if not os.path.exists(TARGET_DIR):
         os.mkdir(TARGET_DIR)
     
-    if not os.path.exists(TARGET_DIR + setname):
-        os.mkdir(TARGET_DIR + setname)
-        os.mkdir(TARGET_DIR + setname + '/Images/')
-        os.mkdir(TARGET_DIR + setname + '/Labels/')
+    root_set_path = os.path.join(ROOT_DIR, setname)
+    target_set_path = os.path.join(TARGET_DIR, setname)
+
+    if not os.path.exists(target_set_path):
+        
+        os.mkdir(target_set_path)
+        os.mkdir(target_set_path + '/Images/')
+        os.mkdir(target_set_path + '/Labels/')
 
     # Sampling images and labels from a given dataset       
-    for i in tqdm(range(len(os.listdir(os.path.join(ROOT_DIR + setname, 'Images'))))):
-        image_path =  os.listdir(os.path.join(ROOT_DIR + setname, 'Images'))[i]
+    for i in tqdm(range(len(os.listdir(os.path.join(root_set_path, 'Images'))))):
+        image_path =  os.listdir(os.path.join(root_set_path, 'Images'))[i]
         img_name = image_path.split(".")[0]
-        image = cv2.imread(os.path.join(ROOT_DIR + setname, 'Images',image_path))
-        label = cv2.imread(os.path.join(ROOT_DIR + setname, 'Labels', img_name + '_mask.png'))
+        image = cv2.imread(os.path.join(root_set_path, 'Images',image_path))
+        label = cv2.imread(os.path.join(root_set_path, 'Labels', img_name + '_mask.png'))
 
         # Extracting patches of size img_size for a single image based on location of patch (boundary patch, center patch, corner patch)
-        for i in range(int(image.shape[0]/(img_size-stride)) - 1):    
+        for i in range(int(image.shape[0]/(img_size-stride))):    
             for j in range(int(image.shape[1]/(img_size-stride))):
 
-                if (i  == int(image.shape[0]/(img_size-stride))-2) and not(j == int(image.shape[1]/(img_size-stride))-1):
-                    sample_image(image, label, i, j, TARGET_DIR + setname, img_name, img_size, stride, Boundary = 'i_boundary')
-                elif not (i == int(image.shape[0]/(img_size-stride))-2) and (j  == int(image.shape[1]/(img_size-stride))-1):
-                    sample_image(image, label, i, j, TARGET_DIR + setname, img_name, img_size, stride, Boundary = 'j_boundary')
-                elif (i == int(image.shape[0]/(img_size-stride))-2) and (j == int(image.shape[1]/(img_size-stride))-1):
-                    sample_image(image, label, i, j, TARGET_DIR + setname, img_name, img_size, stride, Boundary = 'ij_boundary')
+                if (i  == int(image.shape[0]/(img_size-stride))-1) and not(j == int(image.shape[1]/(img_size-stride))-1):
+                    sample_image(image, label, i, j, target_set_path, img_name, img_size, stride, Boundary = 'i_boundary')
+                elif not (i == int(image.shape[0]/(img_size-stride))-1) and (j  == int(image.shape[1]/(img_size-stride))-1):
+                    sample_image(image, label, i, j, target_set_path, img_name, img_size, stride, Boundary = 'j_boundary')
+                elif (i == int(image.shape[0]/(img_size-stride))-1) and (j == int(image.shape[1]/(img_size-stride))-1):
+                    sample_image(image, label, i, j, target_set_path, img_name, img_size, stride, Boundary = 'ij_boundary')
                 else:
-                    sample_image(image, label, i, j, TARGET_DIR + setname, img_name, img_size, stride, Boundary = 'Normal' )
+                    sample_image(image, label, i, j, target_set_path, img_name, img_size, stride, Boundary = 'Normal' )
     
-    print('Number of Sampled Images : ',len(os.listdir(TARGET_DIR + setname + '/Images')))
+    print('Number of Sampled Images : ',len(os.listdir(target_set_path + '/Images')))
     
 def sample_image(img, img_label, i, j, path, img_name, img_size,stride, Boundary ):
     """
@@ -362,7 +560,7 @@ def import_data(root, num_bins):
         k = 6
     else:
         print("Error: wrong value for num of bins !!")
-
+    theano.config.floatX = 'float64'
     np_train_dataset_x = np.asarray([d[0] for d in train_data], dtype=theano.config.floatX)
     np_train_dataset_y = np.asarray([d[1] for d in train_data], dtype=theano.config.floatX)
     np_train_dataset_c = np.asarray([d[2] for d in train_data], dtype=theano.config.floatX)
@@ -552,18 +750,14 @@ def prepare_dataset(datasetfilename, root_img, root_label):
     label_list  = os.listdir(root_label)
 
     # process an image and label to prepare label (count map and histogram)
+    #for i in range(len(img_list)):
     def processInput(i):    
 
         img_path = root_img + img_list[i]
         label_path = root_label + label_list[i]
 
-        if not (img_path.split('.')[0] == label_path.split('.')[0]):
-            print("Error: Image and Label name are not same!!")
-            import pdb; pdb.set_trace()
-        
         img = cv2.imread(img_path)
         redundantCountMap, count, gt_hist2, gt_hist4, gt_hist8, gt_hist16, _ = prepare_Label(label_path, patch_size = 32)
-
         return (img,redundantCountMap ,count, gt_hist2, gt_hist4, gt_hist8, gt_hist16)
 
     num_cores = multiprocessing.cpu_count()
@@ -594,7 +788,8 @@ def prepare_Label(labelPath, patch_size):
     larvae_sizes: size of larvae instances in an image
     """
     count_map, hist2, hist4, hist8, hist16, larvae_sizes = prepare_CountMap_HistLabels(labelPath)
-    count_map = np.pad(count_map, pad_width = ((patch_size, patch_size), (patch_size, patch_size), (0,0)), mode = "constant", constant_values=-1)
+    #count_map = np.pad(count_map, pad_width = ((patch_size, patch_size), (patch_size, patch_size), (0,0)), mode = "constant", constant_values=-1)
+    count_map = np.pad(count_map, pad_width = ((patch_size, patch_size), (patch_size, patch_size)), mode = "constant", constant_values=-1)
     redundantCountMap, count  = prepare_redundantCountMap(count_map, patch_size)
     return redundantCountMap, count, hist2, hist4, hist8, hist16, larvae_sizes
 
@@ -646,12 +841,12 @@ def prepare_redundantCountMap(count_map, patch_size):
     redundantCountMap: redundant count map 
     count: total object count in an image
     """ 
-    height = 256
-    width = 256
+    height = 288
+    width = 288
     redundantCountMap = np.zeros((1, height, width))
     for y in range(0,height):
         for x in range(0,width):
-            count = (count_map[x:x+patch_size, y:y+patch_size] == 1).sum()
+            count = (count_map[y:y+patch_size, x:x+patch_size] == 1).sum()
             redundantCountMap[0][y][x] = count
 
     total_count = (count_map == 1).sum()
@@ -702,6 +897,7 @@ def random_contrast(image, min_contrast = 0.3, max_contrast = 3.0):
     image: augmented image
     """
     #convert to float image if uint8
+
     image_format = image.dtype
     if image_format == np.uint8:
         image = image.astype(np.float32)/255.0
@@ -784,14 +980,23 @@ def data_augmentation(ROOT_DIR, TARGET_DIR):
 
     if not os.path.exists(Train_set_aug):           
         os.mkdir(Train_set_aug)
-        os.mkdir(Train_set_aug + 'Images/')
-        os.mkdir(Train_set_aug + 'Labels/')
-    list_dir_image = os.listdir(Train_set + 'Images/')
-    list_dir_label = os.listdir(Train_set + 'Labels/')
-
+        os.mkdir(Train_set_aug + '/Images/')
+        os.mkdir(Train_set_aug + '/Labels/')
+    list_dir_image = os.listdir(Train_set + '/Images/')
+    list_dir_label = os.listdir(Train_set + '/Labels/')
     for i in tqdm(range(len(list_dir_image))):
         image_path = os.path.join(Train_set, 'Images/', list_dir_image[i])
         label_path = os.path.join(Train_set, 'Labels/', list_dir_label[i])
-        augmentation(image_path, label_path, Train_set_aug + 'Images/', Train_set_aug + 'Labels/')
+        augmentation(image_path, label_path, Train_set_aug + '/Images/', Train_set_aug + '/Labels/')
     
     print('Train_aug : ', len(os.listdir(TARGET_DIR + '/Images')))
+
+
+if __name__ == "__main__":
+    
+    #ROOT_DIR = "/srv/misc/dlgroup/ksh/Projects/HistoNet/data/FlyLarvae_dataset/"
+    #TARGET_DIR = "/srv/misc/dlgroup/ksh/Projects/HistoNet/data/"
+    #preprocess_data(ROOT_DIR, TARGET_DIR)
+    root = "/srv/misc/dlgroup/ksh/Projects/HistoNet/data/Train_val_test/"
+    prepare_data(root)
+    
