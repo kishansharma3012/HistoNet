@@ -14,6 +14,7 @@ seed = 0
 random.seed(seed)
 np.random.seed(seed)
 lasagne.random.set_rng(np.random.RandomState(seed))
+ef = 1024.0
 
 def evaluate_histonet(dataset_image, dataset_countmap, dataset_count, dataset_hist, Hist_wt, test_op, data_mean, loss_list,\
                 visualize = False, path = 'Results/', loss_name = 'w_L1',  Loss_wt= [0.5, 0.5,], num_bins = 8):
@@ -41,9 +42,9 @@ def evaluate_histonet(dataset_image, dataset_countmap, dataset_count, dataset_hi
     pred_count: list of predicted count in the test samples
     """
     
-    test_loss_history = [[]] * len(loss_list)
-    gt_count = []
-    pred_count = []
+    test_loss_history = [[] for _ in range(len(loss_list))]    
+    gt_count_list = []
+    pred_count_list = []
     batchsize = 1
 
     for i in range(0,len(dataset_image), batchsize):
@@ -53,13 +54,13 @@ def evaluate_histonet(dataset_image, dataset_countmap, dataset_count, dataset_hi
             visualize_HistoNet_result(path, i, dataset_image[i], dataset_countmap[i], dataset_count[i], dataset_hist[i], \
                         pred_countmap, pred_hist, Hist_wt, data_mean, num_bins)
         
-        err_pix= np.abs(pred_countmap - dataset_countmap[i:i+bs]).mean(axis=(2,3))[0][0]
+        err_pix= np.abs(pred_countmap - dataset_countmap[i:i+batchsize]).mean(axis=(2,3))[0][0]
         
         pred_count = (pred_countmap/(ef)).sum(axis=(1,2,3))
-        err_count = np.abs((dataset_count[i:i+bs]/ef).sum()-pred_count)[0]
+        err_count = np.abs((dataset_count[i:i+batchsize]/ef).sum()-pred_count)[0]
         
         y_shape = pred_hist.shape[0]
-        gt_hist = dataset_s[i:i+bs]
+        gt_hist = dataset_hist[i:i+batchsize]
         p_prob = pred_hist/pred_hist.sum(axis = 1, keepdims=True) + (1e-6)
         p_prob1 = p_prob/p_prob.sum(axis =1, keepdims = True)
         t_prob = gt_hist/gt_hist.sum(axis = 1, keepdims=True) + (1e-6)
@@ -73,17 +74,17 @@ def evaluate_histonet(dataset_image, dataset_countmap, dataset_count, dataset_hi
     
         elif loss_name == 'L1':
             err_l1 = np.abs(pred_hist - gt_hist).sum()/y_shape 
-            loss_l1_temp = (Hist_wt*np.abs(pred_hist - gt_hist)).sum()/y_shape 
+            err_l1_temp = (Hist_wt*np.abs(pred_hist - gt_hist)).sum()/y_shape 
             
         
         err_total = Loss_wt[0]*err_kl + Loss_wt[1]*err_l1 + err_pix 
         test_loss_history = update_loss_history(test_loss_history, [err_total, err_count, err_pix, err_kl, err_l1, err_l1_temp, 0.0])
-        gt_count.append((dataset_countmap[i:i+bs]/ef).sum())
-        pred_count.append(pred_count)
+        gt_count_list.append((dataset_countmap[i:i+batchsize]/ef).sum())
+        pred_count_list.append(pred_count[0])
 
-    return test_loss_history, gt_count, pred_count 
+    return test_loss_history, gt_count_list, pred_count_list
 
-def evaluate_histonet_dsn(dataset_image, dataset_countmap, dataset_count, dataset_hist, dataset_hist_dsn1, Hist_wt, Hist_wt_dsn1, Hist_wt_dsn2, test_op, data_mean, loss_list,\
+def evaluate_histonet_dsn(dataset_image, dataset_countmap, dataset_count, dataset_hist, dataset_hist_dsn1, dataset_hist_dsn2, Hist_wt, Hist_wt_dsn1, Hist_wt_dsn2, test_op, data_mean, loss_list,\
                 visualize = False, path = 'Results/', loss_name = 'w_L1',  Loss_wt= [0.5, 0.5,], num_bins = [2,4,8]):
     """
     Function: Evaluate HistoNet network performance on a dataset (For validation and Testing)
@@ -113,25 +114,25 @@ def evaluate_histonet_dsn(dataset_image, dataset_countmap, dataset_count, datase
     pred_count: list of predicted count in the test samples
     """
     
-    test_loss_history = [[]] * len(loss_list)
-    gt_count = []
-    pred_count = []
+    test_loss_history = [[] for _ in range(len(loss_list))]    
+    gt_count_list = []
+    pred_count_list = []
     batchsize = 1
 
     for i in range(0,len(dataset_image), batchsize):
         pred_countmap, pred_hist, pred_hist_dsn1, pred_hist_dsn2 = test_op(dataset_image, range(i,i+batchsize))
 
         if visualize:
-            visualize_HistoNet_DSN_result(path, i, dataset_image[i], dataset_countmap[i], dataset_count[i], dataset_hist[i], dataset_hist_dsn1[i], dataset_hist_dsn2[i] \
+            visualize_HistoNet_DSN_result(path, i, dataset_image[i], dataset_countmap[i], dataset_count[i], dataset_hist[i], dataset_hist_dsn1[i], dataset_hist_dsn2[i], \
                         pred_countmap, pred_hist, pred_hist_dsn1, pred_hist_dsn2, Hist_wt, Hist_wt_dsn1, Hist_wt_dsn2, data_mean, num_bins)
         
-        err_pix= np.abs(pred_countmap - dataset_countmap[i:i+bs]).mean(axis=(2,3))[0][0]
+        err_pix= np.abs(pred_countmap - dataset_countmap[i:i+batchsize]).mean(axis=(2,3))[0][0]
         
         pred_count = (pred_countmap/(ef)).sum(axis=(1,2,3))
-        err_count = np.abs((dataset_count[i:i+bs]/ef).sum()-pred_count)[0]
+        err_count = np.abs((dataset_count[i:i+batchsize]/ef).sum()-pred_count)[0]
         
         y_shape = pred_hist.shape[0]
-        gt_hist = dataset_hist[i:i+bs]
+        gt_hist = dataset_hist[i:i+batchsize]
         p_prob = pred_hist/pred_hist.sum(axis = 1, keepdims=True) + (1e-6)
         p_prob1 = p_prob/p_prob.sum(axis =1, keepdims = True)
         t_prob = gt_hist/gt_hist.sum(axis = 1, keepdims=True) + (1e-6)
@@ -141,7 +142,7 @@ def evaluate_histonet_dsn(dataset_image, dataset_countmap, dataset_count, datase
 
         # KL Div loss - DSN1
         y_shape_dsn1 = pred_hist_dsn1.shape[0]
-        gt_hist_dsn1 = dataset_hist_dsn1[i:i+bs]
+        gt_hist_dsn1 = dataset_hist_dsn1[i:i+batchsize]
         p_prob_dsn1 = pred_hist_dsn1/(pred_hist_dsn1.sum(axis = 1, keepdims=True) + 1e-6) + (1e-6)
         p_prob1_dsn1 = p_prob_dsn1/p_prob_dsn1.sum(axis =1, keepdims = True)
         t_prob_dsn1 = gt_hist_dsn1/gt_hist_dsn1.sum(axis = 1, keepdims=True) + (1e-6)
@@ -151,7 +152,7 @@ def evaluate_histonet_dsn(dataset_image, dataset_countmap, dataset_count, datase
 
         # KL Div loss - DSN2
         y_shape_dsn2 = pred_hist_dsn2.shape[0]
-        gt_hist_dsn2 = dataset_hist_dsn2[i:i+bs]
+        gt_hist_dsn2 = dataset_hist_dsn2[i:i+batchsize]
         p_prob_dsn2 = pred_hist_dsn2/(pred_hist_dsn2.sum(axis = 1, keepdims=True) + 1e-6) + (1e-6)
         p_prob1_dsn2 = p_prob_dsn2/p_prob_dsn2.sum(axis =1, keepdims = True)
         t_prob_dsn2 = gt_hist_dsn2/gt_hist_dsn2.sum(axis = 1, keepdims=True) + (1e-6)
@@ -171,22 +172,22 @@ def evaluate_histonet_dsn(dataset_image, dataset_countmap, dataset_count, datase
     
         elif loss_name == 'L1':
             err_l1 = np.abs(pred_hist - gt_hist).sum()/y_shape 
-            loss_l1_temp = (Hist_wt*np.abs(pred_hist - gt_hist)).sum()/y_shape 
+            err_l1_temp = (Hist_wt*np.abs(pred_hist - gt_hist)).sum()/y_shape 
             
             err_l1_dsn1 = np.abs(pred_hist_dsn1 - gt_hist_dsn1).sum()/y_shape_dsn1 
-            loss_l1_temp_dsn1 = (Hist_wt_dsn1*np.abs(pred_hist_dsn1 - gt_hist_dsn1)).sum()/y_shape_dsn1 
+            err_l1_temp_dsn1 = (Hist_wt_dsn1*np.abs(pred_hist_dsn1 - gt_hist_dsn1)).sum()/y_shape_dsn1 
             
             err_l1_dsn2 = np.abs(pred_hist_dsn2 - gt_hist_dsn2).sum()/y_shape_dsn2 
-            loss_l1_temp_dsn2 = (Hist_wt_dsn2*np.abs(pred_hist_dsn2 - gt_hist_dsn2)).sum()/y_shape_dsn2 
+            err_l1_temp_dsn2 = (Hist_wt_dsn2*np.abs(pred_hist_dsn2 - gt_hist_dsn2)).sum()/y_shape_dsn2 
             
         
         err_total = Loss_wt[0]*(err_kl + err_kl_dsn1 + err_kl_dsn2) + Loss_wt[1]*(err_l1 + err_l1_dsn1 + err_l1_dsn2) + err_pix 
         test_loss_history = update_loss_history(test_loss_history, [err_total, err_count, err_pix, err_kl, err_kl_dsn1, err_kl_dsn2,\
             err_l1, err_l1_dsn1, err_l1_dsn2, err_l1_temp, err_l1_temp_dsn1, err_l1_temp_dsn2, 0.0])
-        gt_count.append((dataset_countmap[i:i+bs]/ef).sum())
-        pred_count.append(pred_count)
+        gt_count_list.append((dataset_countmap[i:i+batchsize]/ef).sum())
+        pred_count_list.append(pred_count[0])
 
-    return test_loss_history, gt_count, pred_count 
+    return test_loss_history, gt_count_list, pred_count_list 
 
 def save_network(net, file_name, directory):
     """
@@ -213,8 +214,10 @@ def load_network(net, model_path):
 
 def update_loss_history(losses_lists, new_values):
 
-    losses_lists = [losses_lists[i].append(new_values[i]) for i in range(len(losses_lists))]
+    for i in range(len(losses_lists)):
+        losses_lists[i].append(float(new_values[i]))
 
+    
     return losses_lists
 
 def trainer_histonet(net_count, net_hist, dataset_path, loss_list, placeholder_list, epochs, lr_value , \
@@ -261,8 +264,9 @@ def trainer_histonet(net_count, net_hist, dataset_path, loss_list, placeholder_l
     Bins_var = np.linspace(0,200, num_bins + 1)
     center_bin_hist = (Bins_var[:-1] + Bins_var[1:])/2
     Hist_wt = center_bin_hist/center_bin_hist.sum()
-    Hist_wt = np.tile(Hist_wt, (batch_size,1)).astype(dtype = np.float32)
+    Hist_wt = np.tile(Hist_wt, (batch_size,1)).astype(dtype = np.float64)
     
+
     # Preparing optimizer
     params = lasagne.layers.get_all_params([net_count, net_hist], trainable=True)
     updates = lasagne.updates.adam(loss_total, params, learning_rate=lr)
@@ -273,10 +277,12 @@ def trainer_histonet(net_count, net_hist, dataset_path, loss_list, placeholder_l
 
     lr.set_value(lr_value)
     best_valid_err = np.inf
-    dataset_length = len(np_train_dataset_x)
+    datasetlength = len(np_train_dataset_x)
+    batch_size = 2
+    datasetlength = 4
     print("batch_size", batch_size)
     print("lr", lr.eval())
-    print("datasetlength",dataset_length)
+    print("datasetlength",datasetlength)
 
     training_plot_path = os.path.join(root_result, 'Training_plots')
     model_dir = os.path.join(root_result, Experiment_name)
@@ -286,12 +292,12 @@ def trainer_histonet(net_count, net_hist, dataset_path, loss_list, placeholder_l
         os.mkdir(model_dir)
 
     # Resetting Training and Validation loss per epoch history 
-    train_loss_epoch_history = [[]]*len(loss_list)
-    val_loss_epoch_history = [[]]*len(loss_list)
+    train_loss_epoch_history = [[] for _ in range(len(loss_list))]
+    val_loss_epoch_history = [[] for _ in range(len(loss_list))]
     
     for epoch in range(epochs):
 
-        train_loss_history = [[]]* len(loss_list)    
+        train_loss_history = [[] for _ in range(len(loss_list))]    
         
         todo = range(datasetlength)
         
@@ -301,7 +307,7 @@ def trainer_histonet(net_count, net_hist, dataset_path, loss_list, placeholder_l
             err_total, err_count, err_pix, err_kl, err_l1, err_l1_temp, err_reg = train_fn(ex)
             
             if i%print_every == 0 :
-                print("Epoch :", epoch," | Iteration : ", i ,"| Total_Loss :",np.around(err_loss,2), \
+                print("Epoch :", epoch," | Iteration : ", i ,"| Total_Loss :",np.around(err_total,2), \
                     "| Pix Loss :",np.around(err_pix,2), "| Count_Loss : ",np.around(err_count.mean(),2), \
                     "| kl_Loss:", np.around(err_kl,2), "| l1_Loss:", np.around(err_l1,2), "| l1_Loss_temp:", np.around(err_l1_temp,2), \
                     "| reg_Loss:", np.around(err_reg,2), "| Learning_rate:", np.around(lr.get_value(),5))
@@ -312,7 +318,7 @@ def trainer_histonet(net_count, net_hist, dataset_path, loss_list, placeholder_l
         # Learning rate decay
         lr.set_value(lasagne.utils.floatX(lr.get_value() * lr_decay))
 
-        val_loss_history, _, _ = evaluate_histonet(np_val_dataset_x, np_val_dataset_y, np_val_dataset_c, np_val_dataset_s, Hist_wt[0,:], test_op, \
+        val_loss_history, _, _ = evaluate_histonet(np_val_dataset_x[:4], np_val_dataset_y[:4], np_val_dataset_c[:4], np_val_dataset_s[:4], Hist_wt[0,:], test_op, \
                                                     data_mean, loss_list, loss_name = loss_name, Loss_wt = Loss_wt, num_bins= num_bins)
         
         # Updating Loss Epoch history
@@ -339,19 +345,19 @@ def trainer_histonet(net_count, net_hist, dataset_path, loss_list, placeholder_l
             "| Train L1_Loss:",np.around(train_loss_epoch_history[4][-1],2), \
             "| Val L1_Loss:",np.around(val_loss_epoch_history[4][-1],2)) 
         
-        save_network([net, net_hist], 'model_' +str(epoch) + '.npz', model_dir)
+        save_network([net_count, net_hist], 'model_' +str(epoch) + '.npz', model_dir)
         
         # saving best model
         if (val_loss_epoch_history[0][-1] < best_valid_err):
             best_valid_err = val_loss_epoch_history[0][-1]
-            save_network([net, net_hist], 'model_best.npz', model_dir)
+            save_network([net_count, net_hist], 'model_best.npz', model_dir)
             
     Test_directory = root_result + '/Test_results/'
     if not os.path.exists(Test_directory):
         os.mkdir(Test_directory)
 
     # Loading best model
-    load_network([net, net_hist], model_dir + '/model_best.npz')
+    load_network([net_count, net_hist], model_dir + '/model_best.npz')
     test_loss_history, _, _ = evaluate_histonet(np_test_dataset_x, np_test_dataset_y, np_test_dataset_c, np_test_dataset_s, Hist_wt[0,:], \
                                     test_op, data_mean, loss_list, visualize = True, path = Test_directory, loss_name = loss_name, Loss_wt = Loss_wt, num_bins= num_bins)
 
@@ -410,19 +416,19 @@ def trainer_histonet_dsn(net_count, net_hist, net_hist_dsn1, net_hist_dsn2, data
     Bins_var = np.linspace(0,200, num_bins[0] + 1)
     center_bin_hist = (Bins_var[:-1] + Bins_var[1:])/2
     Hist_wt = center_bin_hist/center_bin_hist.sum()
-    Hist_wt_dsn1 = np.tile(Hist_wt, (batch_size,1)).astype(dtype = np.float32)
+    Hist_wt_dsn1 = np.tile(Hist_wt, (batch_size,1)).astype(dtype = np.float64)
     
     # Calculate weights for weighted L1 histogram loss num_bins[1]
     Bins_var = np.linspace(0,200, num_bins[1] + 1)
     center_bin_hist = (Bins_var[:-1] + Bins_var[1:])/2
     Hist_wt = center_bin_hist/center_bin_hist.sum()
-    Hist_wt_dsn2 = np.tile(Hist_wt, (batch_size,1)).astype(dtype = np.float32)
+    Hist_wt_dsn2 = np.tile(Hist_wt, (batch_size,1)).astype(dtype = np.float64)
     
     # Calculate weights for weighted L1 histogram loss num_bins[2]
     Bins_var = np.linspace(0,200, num_bins[2] + 1)
     center_bin_hist = (Bins_var[:-1] + Bins_var[1:])/2
     Hist_wt = center_bin_hist/center_bin_hist.sum()
-    Hist_wt = np.tile(Hist_wt, (batch_size,1)).astype(dtype = np.float32)
+    Hist_wt = np.tile(Hist_wt, (batch_size,1)).astype(dtype = np.float64)
     
     # Preparing optimizer
     params = lasagne.layers.get_all_params([net_count, net_hist, net_hist_dsn1, net_hist_dsn2], trainable=True)
@@ -437,7 +443,8 @@ def trainer_histonet_dsn(net_count, net_hist, net_hist_dsn1, net_hist_dsn2, data
 
     lr.set_value(lr_value)
     best_valid_err = np.inf
-    dataset_length = len(np_train_dataset_x)
+    #dataset_length = len(np_train_dataset_x)
+    dataset_length = 4
     print("batch_size", batch_size)
     print("lr", lr.eval())
     print("datasetlength",dataset_length)
@@ -450,23 +457,23 @@ def trainer_histonet_dsn(net_count, net_hist, net_hist_dsn1, net_hist_dsn2, data
         os.mkdir(model_dir)
 
     # Resetting Training and Validation loss per epoch history 
-    train_loss_epoch_history = [[]]*len(loss_list)
-    val_loss_epoch_history = [[]]*len(loss_list)
+    train_loss_epoch_history =[[] for _ in range(len(loss_list))]
+    val_loss_epoch_history = [[] for _ in range(len(loss_list))]
     
     for epoch in range(epochs):
 
-        train_loss_history = [[]]* len(loss_list)    
+        train_loss_history = [[] for _ in range(len(loss_list))]
         
-        todo = range(datasetlength)
+        todo = range(dataset_length)
         
-        for i in range(0,datasetlength, batch_size):
+        for i in range(0,dataset_length, batch_size):
             ex = todo[i:i+batch_size]
 
             err_total, err_count, err_pix, err_kl, err_kl_dsn1, err_kl_dsn2, err_l1, err_l1_dsn1, err_l1_dsn2,\
                  err_l1_temp, err_l1_temp_dsn1, err_l1_temp_dsn2, err_reg = train_fn(ex)
             
             if i%print_every == 0 :
-                print("Epoch :", epoch," | Iteration : ", i ,"| Total_Loss :",np.around(err_loss,2), \
+                print("Epoch :", epoch," | Iteration : ", i ,"| Total_Loss :",np.around(err_total,2), \
                     "| Pix Loss :",np.around(err_pix,2), "| Count_Loss : ",np.around(err_count.mean(),2), \
                     "| kl_Loss:", np.around(err_kl,2), "| l1_Loss:", np.around(err_l1,2), "| l1_Loss_temp:", np.around(err_l1_temp,2), \
                     "| kl_Loss dsn1:", np.around(err_kl_dsn1,2), "| l1_Loss dsn1:", np.around(err_l1_dsn1,2), "| l1_Loss_temp dsn1:", np.around(err_l1_temp_dsn1,2), \
@@ -480,8 +487,8 @@ def trainer_histonet_dsn(net_count, net_hist, net_hist_dsn1, net_hist_dsn2, data
         # Learning rate decay
         lr.set_value(lasagne.utils.floatX(lr.get_value() * lr_decay))
 
-        val_loss_history, _, _ = evaluate_histonet_dsn(np_val_dataset_x, np_val_dataset_y, np_val_dataset_c, np_val_dataset_s, np_val_dataset_s_dsn1, np_test_dataset_s_dsn2, Hist_wt[0,:], Hist_wt_dsn1[0,:], Hist_wt_dsn2[0,:], test_op, \
-                                                    data_mean, loss_name = loss_name, Loss_wt = Loss_wt, num_bins= num_bins)
+        val_loss_history, _, _ = evaluate_histonet_dsn(np_val_dataset_x[:4], np_val_dataset_y[:4], np_val_dataset_c[:4], np_val_dataset_s[:4], np_val_dataset_s_dsn1[:4], np_val_dataset_s_dsn2[:4], Hist_wt[0,:], Hist_wt_dsn1[0,:], Hist_wt_dsn2[0,:], test_op, \
+                                                    data_mean, loss_list, loss_name = loss_name, Loss_wt = Loss_wt, num_bins= num_bins)
         
         # Updating Loss Epoch history
         train_loss_epoch_history = update_loss_history(train_loss_epoch_history, [np.mean(train_loss_history[i]) for i in range(len(train_loss_history))])
@@ -502,40 +509,40 @@ def trainer_histonet_dsn(net_count, net_hist, net_hist_dsn1, net_hist_dsn2, data
         plot_results(train_loss_epoch_history[11], val_loss_epoch_history[11], training_plot_path,'l1_loss_temp dsn2',12)
         plot_results(train_loss_epoch_history[12], val_loss_epoch_history[12], training_plot_path,'reg_loss',13)
 
-        print("Epoch : ",epoch, "| Train_Total_Loss :", np.around(train_loss_epoch_history[0][-1],2), \
-            "| Val_Total_Loss :", np.around(val_loss_epoch_history[0][-1],2), \
-            "| Train_Count Loss:",np.around(train_loss_epoch_history[1][-1],2),\
-            "| Val_Count Loss:",np.around(val_loss_epoch_history[1][-1],2),\
-            "| Train_Pix_loss:",np.around(train_loss_epoch_history[2][-1],2),\
-            "| Val_Pix_loss:",np.around(val_loss_epoch_history[2][-1],2),\
-            "| Train KL_Loss:",np.around(train_loss_epoch_history[3][-1],2), \
-            "| Val KL_Loss:",np.around(val_loss_epoch_history[3][-1],2), \
-            "| Train L1_Loss:",np.around(train_loss_epoch_history[6][-1],2), \
-            "| Val L1_Loss:",np.around(val_loss_epoch_history[6][-1],2), \
-            "| Train KL dsn1_Loss:",np.around(train_loss_epoch_history[4][-1],2), \
-            "| Val KL_dsn1 Loss:",np.around(val_loss_epoch_history[4][-1],2), \
-            "| Train L1 dsn1_Loss:",np.around(train_loss_epoch_history[7][-1],2), \
-            "| Val L1_dsn1 Loss:",np.around(val_loss_epoch_history[7][-1],2)) 
-            "| Train KL_dsn2_Loss:",np.around(train_loss_epoch_history[5][-1],2), \
-            "| Val KL_dsn2_Loss:",np.around(val_loss_epoch_history[5][-1],2), \
-            "| Train L1_dsn2_Loss:",np.around(train_loss_epoch_history[8][-1],2), \
-            "| Val L1_dsn2_Loss:",np.around(val_loss_epoch_history[8][-1],2))) 
-        
-        save_network([net, net_hist, net_hist_dsn1, net_hist_dsn2], 'model_' +str(epoch) + '.npz', model_dir)
+        print("Epoch : ",epoch, "| Train_Total_Loss :", np.around(train_loss_epoch_history[0][-1],2),\
+		"| Val_Total_Loss :", np.around(val_loss_epoch_history[0][-1],2),\
+		"| Train_Count Loss:",np.around(train_loss_epoch_history[1][-1],2),\
+		"| Val_Count Loss:",np.around(val_loss_epoch_history[1][-1],2),\
+		"| Train_Pix_loss:",np.around(train_loss_epoch_history[2][-1],2),\
+		"| Val_Pix_loss:",np.around(val_loss_epoch_history[2][-1],2),\
+		"| Train KL_Loss:",np.around(train_loss_epoch_history[3][-1],2),\
+		"| Val KL_Loss:",np.around(val_loss_epoch_history[3][-1],2),\
+		"| Train L1_Loss:",np.around(train_loss_epoch_history[6][-1],2),\
+		"| Val L1_Loss:",np.around(val_loss_epoch_history[6][-1],2),\
+		"| Train KL dsn1_Loss:",np.around(train_loss_epoch_history[4][-1],2),\
+		"| Val KL_dsn1 Loss:",np.around(val_loss_epoch_history[4][-1],2),\
+		"| Train L1 dsn1_Loss:",np.around(train_loss_epoch_history[7][-1],2),\
+		"| Val L1_dsn1 Loss:",np.around(val_loss_epoch_history[7][-1],2),\
+		"| Train KL_dsn2_Loss:",np.around(train_loss_epoch_history[5][-1],2),\
+		"| Val KL_dsn2_Loss:",np.around(val_loss_epoch_history[5][-1],2),\
+        "| Train L1_dsn2_Loss:",np.around(train_loss_epoch_history[8][-1],2),\
+        "| Val L1_dsn2_Loss:",np.around(val_loss_epoch_history[8][-1],2))
+
+        save_network([net_count, net_hist, net_hist_dsn1, net_hist_dsn2], 'model_' +str(epoch) + '.npz', model_dir)
         
         # saving best model
         if (val_loss_epoch_history[0][-1] < best_valid_err):
             best_valid_err = val_loss_epoch_history[0][-1]
-            save_network([net, net_hist, net_hist_dsn1, net_hist_dsn2], 'model_best.npz', model_dir)
+            save_network([net_count, net_hist, net_hist_dsn1, net_hist_dsn2], 'model_best.npz', model_dir)
             
     Test_directory = root_result + '/Test_results/'
     if not os.path.exists(Test_directory):
         os.mkdir(Test_directory)
 
     # Loading best model
-    load_network([net, net_hist, net_hist_dsn1, net_hist_dsn2], model_dir + '/model_best.npz')
-    test_loss_history, _, _ = evaluate_histonet(np_test_dataset_x, np_test_dataset_y, np_test_dataset_c, np_test_dataset_s, np_test_dataset_s_dsn1, np_test_dataset_s_dsn2,\
-                                    Hist_wt[0,:], Hist_wt_dsn1[0,:], Hist_wt_dsn2[0,:], test_op, data_mean, visualize = True, path = Test_directory, loss_name = loss_name, Loss_wt = Loss_wt, num_bins= num_bins)
+    load_network([net_count, net_hist, net_hist_dsn1, net_hist_dsn2], model_dir + '/model_best.npz')
+    test_loss_history, _, _ = evaluate_histonet_dsn(np_test_dataset_x, np_test_dataset_y, np_test_dataset_c, np_test_dataset_s, np_test_dataset_s_dsn1, np_test_dataset_s_dsn2,\
+                                    Hist_wt[0,:], Hist_wt_dsn1[0,:], Hist_wt_dsn2[0,:], test_op, data_mean, loss_list, visualize = True, path = Test_directory, loss_name = loss_name, Loss_wt = Loss_wt, num_bins= num_bins)
 
     # saving results for test dataset
     Error_file  = open(model_dir + '/Test_result_Summary.txt', "w")
@@ -568,12 +575,12 @@ def loss_func_histonet(net_count, net_hist, input_var, input_var_ex, reg, loss_n
     # Training forward pass
     prediction_count_map, prediction_hist = lasagne.layers.get_output([net_count, net_hist], deterministic=False)
     prediction_count = (prediction_count_map/ef).sum(axis=(2,3))
-    train_op = theano.function([input_var, input_var_ex], [prediction_count, prediction_hist])
+    train_op = theano.function([input_var, input_var_ex], [prediction_count_map, prediction_hist])
 
     # Val/Test forward pass
     prediction_count_map_t, prediction_hist_t = lasagne.layers.get_output([net_count, net_hist], deterministic=True)
     prediction_count_t = (prediction_count_map_t/ef).sum(axis=(2,3))
-    test_op = theano.function([input_var, input_var_ex], [prediction_count_t, prediction_hist_t])
+    test_op = theano.function([input_var, input_var_ex], [prediction_count_map_t, prediction_hist_t])
 
     # Placeholders for target and weights for histogram weighted L1 loss
     target_var = T.tensor4('target')
@@ -606,7 +613,7 @@ def loss_func_histonet(net_count, net_hist, input_var, input_var_ex, reg, loss_n
         loss_l1_temp = (T.abs_(prediction_hist - target_hist)).sum()/y_shape 
 
     # Regularization loss
-    loss_reg = 0.5*reg*regularize_network_params([net_count, net_hist], l2)
+    loss_reg = 0.5*reg*lasagne.regularization.regularize_network_params([net_count, net_hist], lasagne.regularization.l2)
 
     # Total Loss
     loss_total = loss_pix + Loss_wt[0]*loss_kl + Loss_wt[1]*loss_l1 + loss_reg
@@ -640,12 +647,12 @@ def loss_func_histonet_dsn(net_count, net_hist, net_hist_dsn1, net_hist_dsn2, in
     # Training forward pass
     prediction_count_map, prediction_hist, prediction_hist_dsn1, prediction_hist_dsn2 = lasagne.layers.get_output([net_count, net_hist, net_hist_dsn1, net_hist_dsn2], deterministic=False)
     prediction_count = (prediction_count_map/ef).sum(axis=(2,3))
-    train_op = theano.function([input_var, input_var_ex], [prediction_count, prediction_hist, prediction_hist_dsn1, prediction_hist_dsn2])
+    train_op = theano.function([input_var, input_var_ex], [prediction_count_map, prediction_hist, prediction_hist_dsn1, prediction_hist_dsn2])
 
     # Val/Test forward pass
     prediction_count_map_t, prediction_hist_t, prediction_hist_dsn1_t, prediction_hist_dsn2_t = lasagne.layers.get_output([net_count, net_hist, net_hist_dsn1, net_hist_dsn2], deterministic=True)
     prediction_count_t = (prediction_count_map_t/ef).sum(axis=(2,3))
-    test_op = theano.function([input_var, input_var_ex], [prediction_count_t, prediction_hist_t, prediction_hist_dsn1_t, prediction_hist_dsn2_t])
+    test_op = theano.function([input_var, input_var_ex], [prediction_count_map_t, prediction_hist_t, prediction_hist_dsn1_t, prediction_hist_dsn2_t])
 
     # Placeholders for target and weights for histogram weighted L1 loss
     target_var = T.tensor4('target')
@@ -709,10 +716,10 @@ def loss_func_histonet_dsn(net_count, net_hist, net_hist_dsn1, net_hist_dsn2, in
         loss_l1_temp_dsn2 = (T.abs_(prediction_hist_dsn2 - target_hist_dsn2)).sum()/y_shape 
     
     # Regularization loss
-    loss_reg = 0.5*reg*regularize_network_params([net_count, net_hist, net_hist_dsn1, net_hist_dsn2], l2)
+    loss_reg = 0.5*reg*lasagne.regularization.regularize_network_params([net_count, net_hist, net_hist_dsn1, net_hist_dsn2], lasagne.regularization.l2)
 
     # Total Loss
-    loss_total = loss_pix + Loss_wt[0]*(loss_kl + loss_kl_dsn1 + loss_kl_dsn2) + loss_wt[1]*(loss_l1 + loss_l1_dsn1 + loss_l1_dsn2) + loss_reg
+    loss_total = loss_pix + Loss_wt[0]*(loss_kl + loss_kl_dsn1 + loss_kl_dsn2) + Loss_wt[1]*(loss_l1 + loss_l1_dsn1 + loss_l1_dsn2) + loss_reg
     
     loss_list = [loss_total, loss_count, loss_pix, loss_kl, loss_kl_dsn1, loss_kl_dsn2, loss_l1, loss_l1_dsn1, loss_l1_dsn2,\
                 loss_l1_temp, loss_l1_temp_dsn1, loss_l1_temp_dsn2, loss_reg] 
@@ -810,7 +817,7 @@ def visualize_HistoNet_result(path, i, image, gt_countmap, gt_count, gt_hist, pr
     ax8.hist(Bins[:-1], weights= pred_hist.T , bins = Bins)
     
     if not os.path.exists(path + '/HistoNet_eval_result'): 
-        os.mkdir(path + '/HistoNet_eval_result-cell')
+        os.mkdir(path + '/HistoNet_eval_result')
     fig.savefig(path + '/HistoNet_eval_result/image-' + str(i) + '.png', bbox_inches='tight', pad_inches=0)
 
 def visualize_HistoNet_DSN_result(path, i, image, gt_countmap, gt_count, gt_hist, gt_hist_dsn1, gt_hist_dsn2, pred_countmap, pred_hist, pred_hist_dsn1, pred_hist_dsn2,\
@@ -881,18 +888,18 @@ def visualize_HistoNet_DSN_result(path, i, image, gt_countmap, gt_count, gt_hist
     ax8.set_title("Pred Histogram")
     ax8.hist(Bins[:-1], weights= pred_hist.T , bins = Bins)
 
-    Bins2 = np.linspace(0,200, num_bins[0] + 1))
+    Bins2 = np.linspace(0,200, num_bins[0] + 1)
     ax9.set_title("Gt Histogram dsn1")
     ax9.hist(Bins2[:-1], weights= gt_hist_dsn1.T , bins = Bins2)
     ax11.set_title("Pred Histogram dsn1")
     ax11.hist(Bins2[:-1], weights= pred_hist_dsn1.T , bins = Bins2)
     
-    Bins4 = np.linspace(0,200,num_bins[1] + 1))
+    Bins4 = np.linspace(0,200,num_bins[1] + 1)
     ax10.set_title("Gt Histogram dsn2")
     ax10.hist(Bins4[:-1], weights= gt_hist_dsn2.T , bins = Bins4)
     ax12.set_title("Pred Histogram dsn2")
     ax12.hist(Bins4[:-1], weights= pred_hist_dsn2.T , bins = Bins4)
     
     if not os.path.exists(path + '/HistoNet_DSN_eval_result'): 
-        os.mkdir(path + '/HistoNet_DSN_eval_result-cell')
+        os.mkdir(path + '/HistoNet_DSN_eval_result')
     fig.savefig(path + '/HistoNet_DSN_eval_result/image-' + str(i) + '.png', bbox_inches='tight', pad_inches=0)
