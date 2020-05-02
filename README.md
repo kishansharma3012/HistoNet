@@ -19,7 +19,22 @@ To get the individual labeled instance and total number of objects in an image u
 
 Note: the given mask labels have 4 different pixel values (50, 140, 200, 255), a single object have same pixel value, and the object near to each other are represented using different pixel value. To get different pixel values for individual object use Scikit-library's measure label function.
 
-### Prepare-data
+### Data-preparation
+step1: Sampling 256x256 images
+step2: Data-augmentation
+step3: Calculating target size histogram and redundant object countmap.
+```bash
+python data_utils.py --data_dir="path_to_HistoNet/data/FlyLarvae_dataset/" --target_dir="path_to_HistoNet/data/"
+```
+## Training HistoNet
+### Environment
+Create environment:
+```bash
+ conda create --name <env> --file req.txt
+```
+```bash
+python main.py --dataset_path="path_to_HistoNet/data/Train_val_test/" --experiment_name="HistoNet_01_05_2020" --output_dir="path_to_HistoNet/Result_10_5/" --loss_name="w_L1" --num_epochs=2 --batch_size=2 --num_bins="8" --Loss_wt="0.5,0.5" --lr_decay=0.95 --lr=8e-3 --reg=1e-4 --DSN="False"
+```
 
 ## References
 1. S. Diener, N.M.S. Solano, F.R. Guti´errez, C. Zurbr ¨ ugg, and K. Tockner. Biological treatment of municipal organic waste using black soldier fly larvae. Waste and Biomass Valorization, 2(4):357–363, 2011.
