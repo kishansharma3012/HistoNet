@@ -20,9 +20,9 @@ To get the individual labeled instance and total number of objects in an image u
 Note: the given mask labels have 4 different pixel values (50, 140, 200, 255), a single object have same pixel value, and the object near to each other are represented using different pixel value. To get different pixel values for individual object use Scikit-library's measure label function.
 
 ### Data-preparation
-step1: Sampling 256x256 images
-step2: Data-augmentation
-step3: Calculating target size histogram and redundant object countmap.
+step1: Sampling 256x256 images <br />
+step2: Data-augmentation <br />
+step3: Calculating target size histogram and redundant object countmap. <br />
 ```bash
 python data_utils.py --data_dir="path_to_HistoNet/data/FlyLarvae_dataset/" --target_dir="path_to_HistoNet/data/"
 ```
