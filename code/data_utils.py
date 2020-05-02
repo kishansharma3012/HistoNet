@@ -12,6 +12,7 @@ from skimage import measure
 from skimage import filters
 from tqdm import tqdm
 import theano
+import argparse
 
 
 def sample_image1(img, img_label, counter, i, j, start_index, end_index, path, img_name, img_size,stride, Boundary ):
@@ -232,7 +233,7 @@ def preprocess_data(ROOT_DIR, TARGET_DIR):
     sampler(ROOT_DIR_2, TARGET_DIR_2, 'Test', img_size= 256, stride = 128)
     """
     #Step 3: Data Augmentation
-    print('\n Step 3: Data Augmentation...........')
+    print('\n Step 2: Data Augmentation...........')
     ROOT_DIR_3 = os.path.join(TARGET_DIR_1, 'Train')
     TARGET_DIR_3 = os.path.join(TARGET_DIR_1, 'Train_Aug')
     data_augmentation(ROOT_DIR_3, TARGET_DIR_3)
@@ -538,14 +539,21 @@ def import_data(root, num_bins):
     if os.path.exists(root + '/val.p'):
         print('Loading Val Datasets....')
         val_data = pickle.load(open(root + '/val.p', "rb" ))
+    else:
+        print('Error: Loading Val Datasets not found!!')
+        
     if os.path.exists(root + '/test.p'):
         print('Loading Test Datasets....')
         test_data = pickle.load(open(root + '/test.p', "rb" ))    
-
+    else:
+        print('Error: Loading test Datasets not found!!')
+    
     if os.path.exists(root + '/train.p'):
         print('Loading Train Datasets....')
         train_data = pickle.load(open(root + '/train.p', "rb" ))
-
+    else:
+        print('Error: Loading train Datasets not found!!')
+    
     np.random.shuffle(train_data)
     np.random.shuffle(val_data)
     np.random.shuffle(test_data)
@@ -643,14 +651,21 @@ def import_data_dsn(root, num_bins):
     if os.path.exists(root + '/val.p'):
         print('Loading Val Datasets....')
         val_data = pickle.load(open(root + '/val.p', "rb" ))
+    else:
+        print('Error: Loading Val Datasets not found!!')
+    
     if os.path.exists(root + '/test.p'):
         print('Loading Test Datasets....')
         test_data = pickle.load(open(root + '/test.p', "rb" ))    
+    else:
+        print('Error: Loading test Datasets not found!!')
 
     if os.path.exists(root + '/train.p'):
         print('Loading Train Datasets....')
         train_data = pickle.load(open(root + '/train.p', "rb" ))
-
+    else:
+        print('Error: Loading train Datasets not found!!')
+    
     np.random.shuffle(train_data)
     np.random.shuffle(val_data)
     np.random.shuffle(test_data)
@@ -994,9 +1009,13 @@ def data_augmentation(ROOT_DIR, TARGET_DIR):
 
 if __name__ == "__main__":
     
-    #ROOT_DIR = "/srv/misc/dlgroup/ksh/Projects/HistoNet/data/FlyLarvae_dataset/"
-    #TARGET_DIR = "/srv/misc/dlgroup/ksh/Projects/HistoNet/data/"
-    #preprocess_data(ROOT_DIR, TARGET_DIR)
-    root = "/srv/misc/dlgroup/ksh/Projects/HistoNet/data/Train_val_test/"
-    prepare_data(root)
+    parser = argparse.ArgumentParser(description="HistoNet")
+    parser.add_argument("--data_dir", type=str, metavar="N", help="Flylarvae raw dataset directory path")
+    parser.add_argument("--target_dir", type=str, metavar="N", help="preprocessed directory path")
+    args = parser.parse_args()
+
+    ROOT_DIR = args.data_dir
+    TARGET_DIR = args.target_dir
+    preprocess_data(ROOT_DIR, TARGET_DIR)
+    prepare_data(os.path.join(TARGET_DIR, "Train_val_test/"))
     
